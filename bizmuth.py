@@ -44,15 +44,20 @@ class cap:
 def inverse_square(x):
     return (1 / (4*math.pi*(x + (1/(2*math.sqrt(math.pi)))**2)))
 
+""" NOTES:
+
+    build KD tree at once, instead of all on inserts
+"""
 
 class root(cap):
     def __init__(self):
-        super().__init__(parent=None, pos=(width/2, height/2), size=40, direction=random.uniform(0, math.pi*2), children=[])
+        super().__init__(parent=None, pos=(width/2, height/2), size=10, direction=0, children=[])
         self.leaves = set()
         self.leaves.add(self)
         self.kd = forest.kdNode(self.pos)
-        self.depth = 40
-        self.max_depth = 40
+        self.max_depth = 400
+        self.depth = self.max_depth
+        self.max_size = 10
 
 
     def reset(self):
@@ -61,7 +66,6 @@ class root(cap):
         self.leaves.add(self)
         self.kd = forest.kdNode(self.pos)
         self.depth = self.max_depth
-        self.direction = random.uniform(0, math.pi*2)
 
     def grow(self):
         while self.depth > 5:
@@ -70,13 +74,24 @@ class root(cap):
 
     def grow_once(self):
         leaf = random.sample(self.leaves, 1)[0]
-        self.leaves.remove(leaf)
+       
         
         # caluclate new pos
         wiggle = math.radians(30)
-        direction = random.uniform(leaf.direction - wiggle, leaf.direction + wiggle)
-        size = inverse_square(1-(self.depth / self.max_depth)) * self.max_depth
-        print(size)
+        if random.uniform(0, 1) > 0.9: # let's split!
+            direction = random.uniform(leaf.direction - wiggle * 2, leaf.direction)
+
+            self.add_cap(leaf, direction)
+            self.add_cap(leaf, direction + math.pi / 2)
+        else:   
+            direction = random.uniform(leaf.direction - wiggle, leaf.direction + wiggle)
+            #size = 30 #inverse_square(1-(self.depth / self.max_depth)) * self.max_depth
+            self.add_cap(leaf, direction)
+        
+        self.leaves.remove(leaf)
+
+    def add_cap(self, leaf, direction, size=None):
+        size = self.max_size if size is None else size
         pos = (leaf.size * math.cos(direction) + leaf.pos[0], leaf.size * math.sin(direction) + leaf.pos[1])
         if pos in world:
             new_cap = cap(parent=leaf, pos=pos, direction=direction, size=size)
@@ -86,20 +101,18 @@ class root(cap):
         else: # DEATH!!!
             self.depth = 0
 
+
+
     def draw(self, ctx):
         q = queue.Queue()
+
+        ctx.set_source_rgb(0.4, 0.9, 0.2)
         q.put(self)
         while not q.empty():
             cur = q.get()
 
-            if cur in self.leaves:
-                ctx.set_source_rgb(1, 0, 0)
-            else:
-                color = colorsys.hsv_to_rgb(0.3, .75, .75)
-                ctx.set_source_rgba(*color, 0.5)
-            ctx.arc(*cur.pos, cur.size, 0, math.pi*2)
+            ctx.arc(*cur.pos, cur.size, 0, 7)
             ctx.fill()
-
 
             for child in cur.children:
                 q.put(child)
@@ -123,11 +136,14 @@ def update(dt):
 @window.event
 def on_mouse_press(x, y, button, modifiers):
     if button == mouse.LEFT:
-        pass
-        global kd_tree
-        kd_tree = forest.insert_point(kd_tree, (x, height-y))
         clear_surface(ctx)
-        forest.draw_tree(ctx, kd_tree, world)
+        root_root.draw(ctx)
+        bad_nn = forest.nearestNeighbor((x, height-y), root_root.kd, (0,0))
+        print(bad_nn)
+        ctx.save()
+        ctx.arc(*bad_nn.point, 20, 0, math.pi * 2)
+        ctx.stroke()
+        ctx.restore()
 
 @window.event
 def on_key_press(symbol, modifiers):
@@ -175,6 +191,10 @@ if __name__ == "__main__":
     root_root = root()
     root_root.grow()
     root_root.draw(ctx)
+
+    ctx.move_to(100,100)
+    ctx.curve_to(200, 100, 200, 100, 200, 200)
+    ctx.stroke()
 
     #forest.draw_tree(ctx, root_root.kd, world)
 

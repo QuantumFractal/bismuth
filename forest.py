@@ -16,6 +16,10 @@ class kdNode:
                f"""L: {'none' if self.left is None else ','.join(str(dim) for dim in self.left.point)}, """+
                f"""R: {'none' if self.right is None else ','.join(str(dim) for dim in self.right.point)}""")
 
+    def is_leaf(self):
+        return self.left is None and self.right is None
+
+
 
 class boundingBox:
     def __init__(self, x1, y1, x2, y2):
@@ -56,6 +60,34 @@ class boundingBox:
         ctx.arc(*self.max, 3, 0, 7)
         ctx.fill()
         ctx.restore()
+
+
+def nearestNeighbor(point, node, ref_point, ref_distance=math.inf, depth=0):
+
+    if node is None:
+        return
+
+    if node.is_leaf():
+        new_dist = dist(point, node.point)
+        if new_dist < ref_distance:
+            ref_distance = new_dist
+            ref_point = node.point
+    else:
+        dim = depth % K
+        if point[dim] <= node.point[dim]:
+            if point[dim] - ref_distance <= node.point[dim]:
+                return nearestNeighbor(point, node.left, ref_point, ref_distance, depth=depth+1)
+            if point[dim] + ref_distance > node.point[dim]:
+                return nearestNeighbor(point, node.right, ref_point, ref_distance, depth=depth+1)
+        else:
+            if point[dim] + ref_distance > node.point[dim]:
+                return nearestNeighbor(point, node.right, ref_point, ref_distance, depth=depth+1)
+            if point[dim] - ref_distance <= node.point[dim]:
+                return nearestNeighbor(point, node.left, ref_point, ref_distance, depth=depth+1)
+
+
+def dist(p1, p2):
+    return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
 
 
 def insert_point(root, pos, depth=0):
