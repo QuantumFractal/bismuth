@@ -2,9 +2,12 @@ import ctypes
 import cairo
 import math
 import random
+import queue
 
+import forest
 from pyglet import app, clock, gl, image, window
 from pyglet.window import key
+
 
 # create data shared by ImageSurface and Texture
 width, height = 1024, 1024
@@ -17,65 +20,67 @@ texture = image.Texture.create_for_size(gl.GL_TEXTURE_2D, width, height, gl.GL_R
 window = window.Window(width=width, height=height)
 ctx = cairo.Context(surface)
 
+def get_random_angle():
+    return random.uniform(0, math.pi*2)
 
-center = (width/2, height/2)
-
-counter = 0
-
-
-MAX_STEPS = 10
-#new_child = lambda parent, size, angle: {'parent': parent, 'pos': pos, 'size': size, 'angle': angle, 'child': None}
-
-def new_child(parent, pos, size, angle):
-    if parent is not None:
-        pos = (parent['pos'][0] + (r * math.cos(cur['angle'])), parentpos[1] + (r * math.sin(cur['angle'])))
-        return {'parent': parent, 'pos': pos, }
-    else:
-        return {'parent': None, 'pos': pos, 'size': size, 'angle': angle, 'child': None}
-
-def grow_tree():
-    # parameter
-    og = 40
-    trunk_size = og
-    wiggle = math.radians(90)
-
-    tree = new_child(None, 20, random.uniform(0, math.pi*2))
-    cur = tree
-    while trunk_size > 0:
-        trunk_size -= 1
-        angle = random.uniform(cur['angle'] - wiggle *  (1- (trunk_size/og)), cur['angle'] + wiggle * (1- (trunk_size/og)))
-        cur['child'] = new_child(cur, 20, angle)
-        cur = cur['child']
-    return tree
-
-def grow_one_step(root, wiggle, size, step):
-    # look for child
-    while root['child'] is not None:
-        root = root['child']
-
-    root_angle = root['angle']
-    root_radius = root['size']
-    angle = random.uniform(root_radius - wiggle, root_radius + wiggle)
-    root['child'] = new_child(root, size, angle)
+root_root = None
 
 
-def draw_tree(tree, ctx):
-    cur = tree
-    pos = center
-    while cur is not None:
-        ctx.arc(*pos, cur['size'], 0, 2*math.pi)
-        ctx.set_source_rgb(76/256, 122/256, 112/256)
-        ctx.stroke()
+class cap:
+    def __init__(self, parent=None, size=10, direction=math.pi, pos=(0,0), children=[]):
+        self.parent = parent
+        self.size = size
+        self.direction = direction
+        self.pos = pos
+        self.children = children
 
-        r = cur['size']
+    def __str__(self):
+        return f"""<{','.join(str(x) for x in self.pos)}>"""
 
 
-        ctx.set_source_rgb(231/256, 156/256, 74/256)
-        ctx.move_to(*pos)
-        pos = (pos[0] + (r * math.cos(cur['angle'])), pos[1] + (r * math.sin(cur['angle'])))
-        ctx.line_to(*pos)
-        ctx.stroke()
-        cur = cur['child']
+class root(cap):
+    def __init__(self):
+        super().__init__(parent=None, pos=(width/2, height/2), size=30, direction=random.uniform(0, math.pi*2), children=[])
+        self.leaves = set()
+        self.leaves.add(self)
+        self.kd = forest.kdNode(self.pos)
+
+
+    def reset(self):
+        self.children.clear()
+        self.leaves.clear()
+        self.leaves.add(self)
+
+    def grow(self):
+        leaf = random.sample(self.leaves, 1)[0]
+        self.leaves.remove(leaf)
+        
+        # caluclate new pos
+        direction = random.uniform(0, math.pi*2)
+        size = 50
+        pos = (leaf.size * math.cos(direction) + leaf.pos[0], leaf.size * math.sin(direction) + leaf.pos[1])
+        new_cap = cap(parent=leaf, pos=pos, direction=direction, size=size)
+        self.kd = forest.insert_point(self.kd, pos)
+        self.leaves.add(new_cap)
+        self.children.append(new_cap)
+
+    def draw(self, ctx):
+        q = queue.Queue()
+
+        q.put(self)
+        while not q.empty():
+            cur = q.get()
+
+            if cur in self.leaves:
+                ctx.set_source_rgb(1, .5, .5)
+            else:
+                ctx.set_source_rgb(1,1,1)
+            ctx.arc(*cur.pos, cur.size, 0, math.pi*2)
+            ctx.fill()
+
+
+            for child in cur.children:
+                q.put(child)
 
 
 def clear_surface(ctx):
@@ -89,21 +94,8 @@ def clear_surface(ctx):
     ctx.fill()
 
 
-forest = []
-for x in range(6):
-    forest.append(new_child(None, random.randint(5,35), 10, random.uniform(0, math.pi)))
-step = 0
-
 def update(dt):
-    global step
-    if step < MAX_STEPS:
-        clear_surface(ctx)
-        for tree in forest:
-            grow_one_step(tree, math.radians(40), 50, step)
-            draw_tree(tree, ctx)
-        step += 1
-
-clock.schedule_interval(update, 1/30)
+    pass
 
 
 @window.event
@@ -114,11 +106,12 @@ def on_key_press(symbol, modifiers):
         print('The left arrow key was pressed.')
     elif symbol == key.SPACE:
         clear_surface(ctx)
-        global forest, step
-        step = 0
-        forest = []
-        for x in range(2):
-            forest.append(new_child(None, 20, 0))
+        root_root.reset()
+        for x in range(100):
+            root_root.grow()
+        root_root.draw(ctx)
+        forest.print_tree(root_root.kd)
+
 
 @window.event
 def on_draw():
@@ -141,5 +134,17 @@ def on_draw():
     gl.glVertex2i(0, height)
     gl.glEnd()
 
-# call clock.schedule_update here to update the ImageSurface every frame
-app.run()
+
+if __name__ == "__main__":
+    clock.schedule_interval(update, 1/30)
+    clear_surface(ctx)
+    root_root = root()
+    for x in range(5):
+        root_root.grow()
+    root_root.draw(ctx)
+
+    forest.print_tree(root_root.kd)
+    forest.draw_tree(ctx, root_root.kd, (0, width), width, height)
+
+    # call clock.schedule_update here to update the ImageSurface every frame
+    app.run()
