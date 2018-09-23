@@ -1,3 +1,7 @@
+import math
+import colorsys
+import random
+
 K = 2
 
 class kdNode:
@@ -13,6 +17,47 @@ class kdNode:
                f"""R: {'none' if self.right is None else ','.join(str(dim) for dim in self.right.point)}""")
 
 
+class boundingBox:
+    def __init__(self, x1, y1, x2, y2):
+        self.min = (min(x1, x2), min(y1, y2))
+        self.max = (max(x1, x2), max(y1, y2))
+
+    def __str__(self):
+        return f"[({self.min[0]}, {self.min[1]}), ({self.max[0]}, {self.max[1]})]"
+
+
+    def __contains__(self, point):
+        assert len(point) == 2
+        return self.min[0] <= point[0] <= self.max[0] and self.min[1] <= point[1] <= self.max[1]
+
+
+    def divide_vertical(self, x):
+        assert self.min[0] <= x <= self.max[0]
+        left = boundingBox(*self.min, x, self.max[1])
+        right = boundingBox(x, self.min[1], *self.max)
+        return left, right
+    
+    def divide_horizonal(self, y):
+        assert self.min[1] <= y <= self.max[1]
+        left = boundingBox(*self.min, self.max[0], y)
+        right = boundingBox(self.min[0], y, *self.max)
+        return left, right
+
+    def draw(self, ctx):
+        ctx.save()
+        hue = random.uniform(0, 1)
+        ctx.set_source_rgba(*colorsys.hsv_to_rgb(hue, .75, .75), .75)
+        ctx.set_line_width(4)
+        ctx.set_dash([5])
+        ctx.rectangle(self.min[0], self.min[1], self.max[0] - self.min[0], self.max[1] - self.min[1])
+        ctx.stroke()
+        ctx.arc(*self.min, 3, 0, 7)
+        ctx.move_to(*self.max)
+        ctx.arc(*self.max, 3, 0, 7)
+        ctx.fill()
+        ctx.restore()
+
+
 def insert_point(root, pos, depth=0):
 
     if root is None:
@@ -25,29 +70,54 @@ def insert_point(root, pos, depth=0):
         root.right = insert_point(root.right, pos, depth=depth+1)
     return root
 
-def draw_tree(ctx, root, bounds, width, height, depth=0):
+
+def draw_tree(ctx, root, bb, depth=0):
+
     if root is None:
         return
-    
-    cd_idx = depth % K
-    if cd_idx == 0: # X line
-        ctx.set_source_rgba(1, 0, 0, .5)
-        ctx.move_to(bounds[0], root.point[cd_idx])
-        ctx.line_to(bounds[1], root.point[cd_idx])
-        ctx.stroke()
-        left_bounds = (0, root.point[1])
-        right_bounds = (root.point[1], height)
-    else: # Y line
-        ctx.set_source_rgba(0, 1, 0, .5)
-        ctx.move_to(root.point[cd_idx], bounds[0])
-        ctx.line_to(root.point[cd_idx], bounds[1])
-        ctx.stroke()
-        left_bounds = (0, root.point[0])
-        right_bounds = (root.point[0], width)
 
-    draw_tree(ctx, root.left, left_bounds, width, height, depth=depth+1)
-    draw_tree(ctx, root.right, right_bounds, width, height, depth=depth+1)
+    bb.draw(ctx)
+    ctx.save()
+    ctx.set_source_rgb(1,1,1)
+    ctx.arc(*root.point, 3, 0, 7)
+    ctx.fill()
+    ctx.restore()
+    dim = depth % K
 
+    if dim == 0:
+        left_b, right_b = bb.divide_vertical(root.point[0])
+    else:
+        left_b, right_b = bb.divide_horizonal(root.point[1])
+
+    draw_tree(ctx, root.left, left_b, depth=depth+1)
+    draw_tree(ctx, root.right, right_b, depth=depth+1)
+
+
+"""
+cd_idx = depth % K
+if cd_idx == 0: # X line
+    ctx.set_source_rgba(1, 0, 0, .5)
+    ctx.move_to(bounds[0], root.point[1])
+    ctx.line_to(bounds[1], root.point[1])
+    ctx.stroke()
+    left_bounds = (bounds[0], root.point[1])
+    right_bounds = (root.point[1], bounds[1])
+else: # Y line
+    ctx.set_source_rgba(0, 1, 0, .5)
+    ctx.move_to(root.point[0], bounds[0])
+    ctx.line_to(root.point[0], bounds[1])
+    ctx.stroke()
+    left_bounds = (bounds[0], root.point[0])
+    right_bounds = (root.point[0], bounds[1])
+
+ctx.set_source_rgb(1,1,1)
+ctx.arc(*root.point, 4, 0, math.pi*2)
+ctx.fill()
+
+print(f"LEFT BOUNDS: {left_bounds}, RIGHT BOUNDS: {right_bounds}")
+draw_tree(ctx, root.left, left_bounds, width, height, depth=depth+1)
+draw_tree(ctx, root.right, right_bounds, width, height, depth=depth+1)
+"""
 
 def print_tree(root, indent='', last=False):
     if root is None:
