@@ -26,6 +26,13 @@ def get_random_angle():
 
 root_root = None
 kd_tree = None
+
+
+usage_state_map = {'SELECT': 'PLACE',
+                   'PLACE': 'SELECT'}
+usage_mode = 'PLACE'
+
+
 world = forest.boundingBox(20,20, width-20, height-20)
 
 class cap:
@@ -74,7 +81,6 @@ class root(cap):
 
     def grow_once(self):
         leaf = random.sample(self.leaves, 1)[0]
-       
         
         # caluclate new pos
         wiggle = math.radians(30)
@@ -106,7 +112,7 @@ class root(cap):
     def draw(self, ctx):
         q = queue.Queue()
 
-        ctx.set_source_rgb(0.4, 0.9, 0.2)
+        ctx.set_source_rgba(0.4, 0.9, 0.2, 0.35)
         q.put(self)
         while not q.empty():
             cur = q.get()
@@ -136,30 +142,58 @@ def update(dt):
 @window.event
 def on_mouse_press(x, y, button, modifiers):
     if button == mouse.LEFT:
-        clear_surface(ctx)
-        root_root.draw(ctx)
-        bad_nn = forest.nearestNeighbor((x, height-y), root_root.kd, (0,0))
-        print(bad_nn)
-        ctx.save()
-        ctx.arc(*bad_nn.point, 20, 0, math.pi * 2)
-        ctx.stroke()
-        ctx.restore()
+
+        if usage_mode == 'PLACE':
+            global kd_tree
+            kd_tree = forest.insert_point(kd_tree, (x, height -y))
+            clear_surface(ctx)
+            forest.draw_tree(ctx, kd_tree, forest.boundingBox(0, 0, width, height))
+
+        if usage_mode == 'SELECT':
+            clear_surface(ctx)
+            point = forest.betterNearestNeighbor((x, height - y), kd_tree, None)
+            forest.draw_tree(ctx, kd_tree, forest.boundingBox(0, 0, width, height))
+
+            print(point)
+            ctx.save()
+            ctx.set_source_rgb(1,1,1)
+            ctx.arc(*point.point, 20, 0, math.pi * 2)
+            ctx.stroke()
+            ctx.restore()
+
+
+        # clear_surface(ctx)
+        # root_root.draw(ctx)
+        # bad_nn = forest.nearestNeighbor((x, height-y), root_root.kd, (0,0))
+        # print(bad_nn)
+        # ctx.save()
+        # ctx.arc(*bad_nn.point, 20, 0, math.pi * 2)
+        # ctx.stroke()
+        # ctx.restore()
 
 @window.event
 def on_key_press(symbol, modifiers):
     global kd_tree
     if symbol == key.A:
+        print('-'*10)
         forest.print_tree(kd_tree)
+
     elif symbol == key.LEFT:
         clear_surface(ctx)
         root_root.grow_once()
         root_root.draw(ctx)
 
+    elif symbol == key.T:
+        global usage_mode
+        usage_mode = usage_state_map[usage_mode]
+        print(f"Usage mode : {usage_mode}")
+
     elif symbol == key.SPACE:
         clear_surface(ctx)
-        root_root.reset()
-        root_root.grow()
-        root_root.draw(ctx)
+        kd_tree = None
+        #root_root.reset()
+        #root_root.grow()
+        #root_root.draw(ctx)
         #forest.draw_tree(ctx, root_root.kd,  bb=world)
 
 
@@ -188,13 +222,6 @@ def on_draw():
 if __name__ == "__main__":
     clock.schedule_interval(update, 1/30)
     clear_surface(ctx)
-    root_root = root()
-    root_root.grow()
-    root_root.draw(ctx)
-
-    ctx.move_to(100,100)
-    ctx.curve_to(200, 100, 200, 100, 200, 200)
-    ctx.stroke()
 
     #forest.draw_tree(ctx, root_root.kd, world)
 

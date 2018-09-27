@@ -46,7 +46,7 @@ class boundingBox:
         left = boundingBox(*self.min, self.max[0], y)
         right = boundingBox(self.min[0], y, *self.max)
         return left, right
-
+        
     def draw(self, ctx):
         ctx.save()
         hue = random.uniform(0, 1)
@@ -86,6 +86,32 @@ def nearestNeighbor(point, node, ref_point, ref_distance=math.inf, depth=0):
                 return nearestNeighbor(point, node.left, ref_point, ref_distance, depth=depth+1)
 
 
+def betterNearestNeighbor(point, node, ref_point, ref_distance=math.inf, depth=0):
+    # Case 1
+    if node.is_leaf():
+        return node
+    
+    dim = depth % K
+    if point[dim] < node.point[dim]:
+        if node.left is None:
+            return node
+        guess = betterNearestNeighbor(point, node.left, ref_point, ref_distance, depth=depth+1)
+        if dist(guess.point, point) < dist(node.point, point):
+            return guess
+        else:
+            return node
+    else:
+        if node.right is None:
+            return node
+        guess = betterNearestNeighbor(point, node.right, ref_point, ref_distance, depth=depth+1)
+        if dist(guess.point, point) < dist(node.point, point):
+            return guess
+        else:
+            return node
+
+    
+    
+
 def dist(p1, p2):
     return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
 
@@ -105,10 +131,10 @@ def insert_point(root, pos, depth=0):
 
 def draw_tree(ctx, root, bb, depth=0):
 
+    bb.draw(ctx)
     if root is None:
         return
 
-    bb.draw(ctx)
     ctx.save()
     ctx.set_source_rgb(1,1,1)
     ctx.arc(*root.point, 3, 0, 7)
@@ -151,22 +177,23 @@ draw_tree(ctx, root.left, left_bounds, width, height, depth=depth+1)
 draw_tree(ctx, root.right, right_bounds, width, height, depth=depth+1)
 """
 
-def print_tree(root, indent='', last=False):
+def print_tree(root, indent='', prefix='', last=False):
     if root is None:
         return
     
     print(indent, end='')
     if last:
-        print('└-', end='')
+        print('└-'+prefix, end='')
         indent += "  "
     else: 
-        print('├-', end='')
-        indent += "| "
+        print('├-'+prefix, end='')
+        indent += "  "
     print(root.point)
 
 
-    print_tree(root.left, indent=indent, last=False)
-    print_tree(root.right, indent=indent, last=True)
+    print_tree(root.left, indent=indent, prefix='L', last=False)
+    print_tree(root.right, indent=indent, prefix='R', last=True)
+
 
 
 """
