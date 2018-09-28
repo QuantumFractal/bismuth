@@ -12,9 +12,10 @@ class kdNode:
         self.data = data
 
     def __str__(self):
-        return (f"""<{','.join(str(dim) for dim in self.point)}> """+
-               f"""L: {'none' if self.left is None else ','.join(str(dim) for dim in self.left.point)}, """+
-               f"""R: {'none' if self.right is None else ','.join(str(dim) for dim in self.right.point)}""")
+        return (f"""<{','.join(str(dim) for dim in self.point)}> """)
+
+               #f"""L: {'none' if self.left is None else ','.join(str(dim) for dim in self.left.point)}, """+
+               #f"""R: {'none' if self.right is None else ','.join(str(dim) for dim in self.right.point)}""")
 
     def is_leaf(self):
         return self.left is None and self.right is None
@@ -55,7 +56,7 @@ class boundingBox:
     def draw(self, ctx):
         ctx.save()
         hue = random.uniform(0, 1)
-        ctx.set_source_rgba(*colorsys.hsv_to_rgb(hue, .75, .75), .75)
+        ctx.set_source_rgba(*colorsys.hsv_to_rgb(hue, .75, .75), .25)
         ctx.set_line_width(4)
         ctx.set_dash([5])
         ctx.rectangle(self.min[0], self.min[1], self.max[0] - self.min[0], self.max[1] - self.min[1])
@@ -66,75 +67,57 @@ class boundingBox:
         ctx.fill()
         ctx.restore()
 
-
-def nearestNeighbor(point, node, ref_point, ref_distance=math.inf, depth=0):
-
-    if node is None:
-        return
-
-    if node.is_leaf():
-        new_dist = dist(point, node.point)
-        if new_dist < ref_distance:
-            ref_distance = new_dist
-            ref_point = node.point
-    else:
-        dim = depth % K
-        if point[dim] <= node.point[dim]:
-            if point[dim] - ref_distance <= node.point[dim]:
-                return nearestNeighbor(point, node.left, ref_point, ref_distance, depth=depth+1)
-            if point[dim] + ref_distance > node.point[dim]:
-                return nearestNeighbor(point, node.right, ref_point, ref_distance, depth=depth+1)
-        else:
-            if point[dim] + ref_distance > node.point[dim]:
-                return nearestNeighbor(point, node.right, ref_point, ref_distance, depth=depth+1)
-            if point[dim] - ref_distance <= node.point[dim]:
-                return nearestNeighbor(point, node.left, ref_point, ref_distance, depth=depth+1)
-
-
-def betterNearestNeighbor(point, node, ref_point, ref_distance=math.inf, depth=0):
-    # Case 1
-    if node.is_leaf():
-        return node
     
-    dim = depth % K
-    if point[dim] < node.point[dim]:
-        if node.left is None:
-            return node
-        guess = betterNearestNeighbor(point, node.left, ref_point, ref_distance, depth=depth+1)
-        if dist(guess.point, point) < dist(node.point, point):
-            return guess
-        else:
-            return node
-    else:
-        if node.right is None:
-            return node
-        guess = betterNearestNeighbor(point, node.right, ref_point, ref_distance, depth=depth+1)
-        if dist(guess.point, point) < dist(node.point, point):
-            return guess
-        else:
-            return node
+def bestNN(query, tree, best_node=None, best_dist=math.inf, depth=0):
 
-    
-def bestNN(query, tree, best, best_dist, bounding_box, depth=0):
-    if tree is None or bounding_box.distance(query) > best_dist:
-        return 
+    # We've exhausted the search
+    # as a leaf node or as a child
+    if tree is None or tree.is_leaf():
+        return tree
+
+    # Check if this node is closer than our best.
+    this_dist = distance(query, tree.point)
+    if this_dist < best_dist:
+        best_node = tree
+        best_dist = this_dist
 
     dim = depth % K
-    dist = distance(query, tree.point)
-    if dist < best_dist:
-        best = tree.point
-        best_dist = dist
+    next_depth = depth + 1
+
+    # Search the left subtree first
+    if query[dim] < tree.point[dim] and tree.left is not None:
+        left_best = bestNN(query, tree.left, best_node=best_node, best_dist=best_dist, depth=next_depth)
+        left_dist = distance(query, left_best.point)
+
+        # Update our best guesses
+        if left_dist < best_dist:
+            best_node = left_best
+            best_dist = left_dist
+
+        # Check if the solution might be in a different subtree
+        if query[dim] + distance(query, best_node.point) > tree.point[dim] and tree.right is not None:
+            right_best = bestNN(query, tree.right, best_node=best_node, best_dist=best_dist, depth=next_depth)
+            right_dist = distance(query, right_best.point)
+
+            # Update our best guesses again
+            if right_dist < best_dist:
+                best_node = right_best
+
+    # Search the right subtree
+    elif tree.right is not None:
+        right_best = bestNN(query, tree.right, depth=next_depth)
+        right_dist = distance(query, right_best.point)
+        if right_dist < best_dist:
+            best_node = right_best
+            best_dist = right_dist
     
-    if query[dim] < tree.point[dim]:
-        if dim == 0:
-            l_bb, r_bb = bounding_box.divide_horizonal(tree.point[dim])
-            bestNN(query, tree.left, best, best_dist, l_bb, depth=depth+1)
-            bestNN(query, tree.right, best, best_dist, r_bb, depth=depth+1)
-        else:
-            l_bb, r_bb = bounding_box.divide_vertical(tree.point[dim])
-            bestNN(query, tree.right, best, best_dist, l_bb, depth=depth+1)
-            bestNN(quert, tree.right, best, best_dist, r_bb, depth=depth+1)          
+        if query[dim] - distance(query, best_node.point) < tree.point[dim] and tree.left is not None:
+            left_best = bestNN(query, tree.left, best_node=best_node, best_dist=best_dist, depth=next_depth)
+            left_dist = distance(query, left_best.point)
+            if left_dist < best_dist:
+                best_node = left_best
     
+    return best_node
     
 
 def distance(p1, p2):
@@ -156,7 +139,7 @@ def insert_point(root, pos, depth=0):
 
 def draw_tree(ctx, root, bb, depth=0):
 
-    bb.draw(ctx)
+    #bb.draw(ctx)
     if root is None:
         return
 

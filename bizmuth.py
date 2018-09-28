@@ -26,6 +26,7 @@ def get_random_angle():
 
 root_root = None
 kd_tree = None
+mouse_pos = {'x': 0, 'y': 0}
 
 
 usage_state_map = {'SELECT': 'PLACE',
@@ -135,41 +136,50 @@ def clear_surface(ctx):
     ctx.fill()
 
 
-def update(dt):
-    pass
-
-
 @window.event
 def on_mouse_press(x, y, button, modifiers):
     if button == mouse.LEFT:
-
         if usage_mode == 'PLACE':
             global kd_tree
             kd_tree = forest.insert_point(kd_tree, (x, height -y))
             clear_surface(ctx)
             forest.draw_tree(ctx, kd_tree, forest.boundingBox(0, 0, width, height))
 
-        if usage_mode == 'SELECT':
-            clear_surface(ctx)
-            point = forest.bestNN((x, height - y), kd_tree, None, math.inf, forest.boundingBox(0, 0, width, height))
-            forest.draw_tree(ctx, kd_tree, forest.boundingBox(0, 0, width, height))
+@window.event
+def on_mouse_motion(x, y, dx, dy):
+   mouse_pos['x'] = x
+   mouse_pos['y'] = y
 
-            print(point)
+
+def calc_nearest(dt):
+    if usage_mode == 'SELECT':
+        x = mouse_pos['x']
+        y = mouse_pos['y']
+
+        clear_surface(ctx)
+        #print('-'*10)
+        #print(f"Query Point: ({x}, {height - y})")
+        ctx.save()
+        ctx.set_source_rgb(1,0,1)
+        ctx.arc(x, height - y, 5, 0, math.pi * 2)
+        ctx.fill()
+        ctx.restore()
+        
+        #point = forest.betterNearestNeighbor((x, height - y), kd_tree, None)
+        point = forest.bestNN((x, height - y), kd_tree) #None, math.inf, forest.boundingBox(0, 0, width, height))
+        forest.draw_tree(ctx, kd_tree, forest.boundingBox(0, 0, width, height))
+
+        if point is not None:      
+            dist = forest.distance((x, height - y), point.point)
+            #print(f">>>> Point: {str(point)}, Dist: {dist}")         
             ctx.save()
             ctx.set_source_rgb(1,1,1)
-            ctx.arc(*point.point, 20, 0, math.pi * 2)
+            ctx.arc(*point.point, dist, 0, math.pi * 2)
             ctx.stroke()
             ctx.restore()
-
-
-        # clear_surface(ctx)
-        # root_root.draw(ctx)
-        # bad_nn = forest.nearestNeighbor((x, height-y), root_root.kd, (0,0))
-        # print(bad_nn)
-        # ctx.save()
-        # ctx.arc(*bad_nn.point, 20, 0, math.pi * 2)
-        # ctx.stroke()
-        # ctx.restore()
+        else:
+            pass
+            #print('>>>> None found')
 
 @window.event
 def on_key_press(symbol, modifiers):
@@ -220,7 +230,7 @@ def on_draw():
 
 
 if __name__ == "__main__":
-    clock.schedule_interval(update, 1/30)
+    clock.schedule_interval(calc_nearest, 1/30)
     clear_surface(ctx)
 
     #forest.draw_tree(ctx, root_root.kd, world)
