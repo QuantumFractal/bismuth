@@ -1,6 +1,10 @@
 """ Algae life form """
 import forest
+import util
+
 import colorsys
+import math
+
 
 class Cluster:
     def __init__(self, seed, bounds):
@@ -30,13 +34,22 @@ class Cluster:
         # Search for the nearest cell
         nearestNeighbor = forest.bestNN(position, self.kd_tree)
         distance = forest.distance(nearestNeighbor.point, position)
+
+        center = self.bounds.get_center()
+        dx = position[0] - center[0]
+        dy = position[1] - center[1]
+
+        angle = math.degrees(math.atan2(dy, dx))
+        hue = util.translate(angle, -180, 180, 0, 1)
+        value = 1 - util.translate(forest.distance(center, position), 0, 500, 0, 1)
+        color = colorsys.hsv_to_rgb(hue, .9, value)
         
         # Lookup cell
         cell = self.cells[nearestNeighbor.point]
 
         # If the new point happens to be in range of our closest neighbor
         if cell.size <= distance <= self.envelope:
-            new_cell = Cell(position=position)
+            new_cell = Cell(position=position, color=color)
             self.kd_tree = forest.insert_point(self.kd_tree, position)
             self.cells[position] = new_cell
 

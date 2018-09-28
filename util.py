@@ -15,6 +15,10 @@ class boundingBox:
         assert len(point) == 2
         return self.min[0] <= point[0] <= self.max[0] and self.min[1] <= point[1] <= self.max[1]
 
+    def get_center(self):
+        x = (self.max[0] - self.min[0]) / 2
+        y = (self.max[1] - self.min[0]) / 2
+        return (x, y)
 
     def divide_vertical(self, x):
         assert self.min[0] <= x <= self.max[0]
@@ -51,3 +55,14 @@ class boundingBox:
         ctx.arc(*self.max, 3, 0, 7)
         ctx.fill()
         ctx.restore()
+
+def translate(value, leftMin, leftMax, rightMin, rightMax):
+    # Figure out how 'wide' each range is
+    leftSpan = leftMax - leftMin
+    rightSpan = rightMax - rightMin
+
+    # Convert the left range into a 0-1 range (float)
+    valueScaled = float(value - leftMin) / float(leftSpan)
+
+    # Convert the 0-1 range into a value in the right range.
+    return rightMin + (valueScaled * rightSpan)
