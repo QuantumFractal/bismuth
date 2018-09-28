@@ -6,6 +6,7 @@ import queue
 import colorsys
 
 import forest
+import algae
 from pyglet import app, clock, gl, image, window
 from pyglet.window import key, mouse
 
@@ -28,101 +29,17 @@ root_root = None
 kd_tree = None
 mouse_pos = {'x': 0, 'y': 0}
 
+seed = algae.cell(position=(width / 2, height / 2), size=10)
+algae_cluster = algae.cluster(seed, bounds)
 
 usage_state_map = {'SELECT': 'PLACE',
                    'PLACE': 'SELECT'}
 usage_mode = 'PLACE'
 
 
-world = forest.boundingBox(20,20, width-20, height-20)
-
-class cap:
-    def __init__(self, parent=None, size=10, direction=math.pi, pos=(0,0), children=[]):
-        self.parent = parent
-        self.size = size
-        self.direction = direction
-        self.pos = pos
-        self.children = children
-
-    def __str__(self):
-        return f"""<{','.join(str(x) for x in self.pos)}>"""
+bounds = forest.boundingBox(20,20, width-20, height-20)
 
 
-
-def inverse_square(x):
-    return (1 / (4*math.pi*(x + (1/(2*math.sqrt(math.pi)))**2)))
-
-""" NOTES:
-
-    build KD tree at once, instead of all on inserts
-"""
-
-class root(cap):
-    def __init__(self):
-        super().__init__(parent=None, pos=(width/2, height/2), size=10, direction=0, children=[])
-        self.leaves = set()
-        self.leaves.add(self)
-        self.kd = forest.kdNode(self.pos)
-        self.max_depth = 400
-        self.depth = self.max_depth
-        self.max_size = 10
-
-
-    def reset(self):
-        self.children.clear()
-        self.leaves.clear()
-        self.leaves.add(self)
-        self.kd = forest.kdNode(self.pos)
-        self.depth = self.max_depth
-
-    def grow(self):
-        while self.depth > 5:
-            self.grow_once()
-            self.depth -= 1
-
-    def grow_once(self):
-        leaf = random.sample(self.leaves, 1)[0]
-        
-        # caluclate new pos
-        wiggle = math.radians(30)
-        if random.uniform(0, 1) > 0.9: # let's split!
-            direction = random.uniform(leaf.direction - wiggle * 2, leaf.direction)
-
-            self.add_cap(leaf, direction)
-            self.add_cap(leaf, direction + math.pi / 2)
-        else:   
-            direction = random.uniform(leaf.direction - wiggle, leaf.direction + wiggle)
-            #size = 30 #inverse_square(1-(self.depth / self.max_depth)) * self.max_depth
-            self.add_cap(leaf, direction)
-        
-        self.leaves.remove(leaf)
-
-    def add_cap(self, leaf, direction, size=None):
-        size = self.max_size if size is None else size
-        pos = (leaf.size * math.cos(direction) + leaf.pos[0], leaf.size * math.sin(direction) + leaf.pos[1])
-        if pos in world:
-            new_cap = cap(parent=leaf, pos=pos, direction=direction, size=size)
-            self.kd = forest.insert_point(self.kd, pos)
-            self.leaves.add(new_cap)
-            self.children.append(new_cap)
-        else: # DEATH!!!
-            self.depth = 0
-
-
-
-    def draw(self, ctx):
-        q = queue.Queue()
-
-        ctx.set_source_rgba(0.4, 0.9, 0.2, 0.35)
-        q.put(self)
-        while not q.empty():
-            cur = q.get()
-
-            ctx.arc(*cur.pos, cur.size, 0, 7)
-            ctx.fill()
-
-            for child in cur.children:
-                q.put(child)
 
 
 def clear_surface(ctx):
@@ -149,6 +66,9 @@ def on_mouse_press(x, y, button, modifiers):
 def on_mouse_motion(x, y, dx, dy):
    mouse_pos['x'] = x
    mouse_pos['y'] = y
+
+
+def grow_once(dt):
 
 
 def calc_nearest(dt):
@@ -200,17 +120,13 @@ def on_key_press(symbol, modifiers):
 
     elif symbol == key.SPACE:
         clear_surface(ctx)
-        kd_tree = None
-        #root_root.reset()
-        #root_root.grow()
-        #root_root.draw(ctx)
-        #forest.draw_tree(ctx, root_root.kd,  bb=world)
+        algae_cluster.reset()
 
 
 @window.event
 def on_draw():
     window.clear()
-
+    root_root.draw(ctx)
     # Draw texture backed by ImageSurface
     gl.glEnable(gl.GL_TEXTURE_2D)
 
@@ -230,14 +146,15 @@ def on_draw():
 
 
 if __name__ == "__main__":
-    clock.schedule_interval(calc_nearest, 1/30)
+    root_root = root()
+    #clock.schedule_interval(calc_nearest, 1/30)
+    clock.schedule_interval(grow_once, 1/5)
     clear_surface(ctx)
 
     #forest.draw_tree(ctx, root_root.kd, world)
 
     #forest.draw_tree(ctx, kd, (0, width), width, height)
     #Fforest.print_tree(root_root.kd)
-
 
     # call clock.schedule_update here to update the ImageSurface every frame
     app.run()
