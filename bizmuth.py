@@ -151,7 +151,7 @@ def on_mouse_press(x, y, button, modifiers):
 
         if usage_mode == 'SELECT':
             clear_surface(ctx)
-            point = forest.betterNearestNeighbor((x, height - y), kd_tree, None)
+            point = forest.bestNN((x, height - y), kd_tree, None, math.inf, forest.boundingBox(0, 0, width, height))
             forest.draw_tree(ctx, kd_tree, forest.boundingBox(0, 0, width, height))
 
             print(point)

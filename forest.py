@@ -46,6 +46,11 @@ class boundingBox:
         left = boundingBox(*self.min, self.max[0], y)
         right = boundingBox(self.min[0], y, *self.max)
         return left, right
+
+    def distance(self, point):
+        d_x = max(self.min[0] - point[0], point[0] - self.max[0])
+        d_y = max(self.min[1] - point[1], point[1] - self.max[1])
+        return math.sqrt(d_x**2 + d_y**2)
         
     def draw(self, ctx):
         ctx.save()
@@ -110,9 +115,29 @@ def betterNearestNeighbor(point, node, ref_point, ref_distance=math.inf, depth=0
             return node
 
     
+def bestNN(query, tree, best, best_dist, bounding_box, depth=0):
+    if tree is None or bounding_box.distance(query) > best_dist:
+        return 
+
+    dim = depth % K
+    dist = distance(query, tree.point)
+    if dist < best_dist:
+        best = tree.point
+        best_dist = dist
+    
+    if query[dim] < tree.point[dim]:
+        if dim == 0:
+            l_bb, r_bb = bounding_box.divide_horizonal(tree.point[dim])
+            bestNN(query, tree.left, best, best_dist, l_bb, depth=depth+1)
+            bestNN(query, tree.right, best, best_dist, r_bb, depth=depth+1)
+        else:
+            l_bb, r_bb = bounding_box.divide_vertical(tree.point[dim])
+            bestNN(query, tree.right, best, best_dist, l_bb, depth=depth+1)
+            bestNN(quert, tree.right, best, best_dist, r_bb, depth=depth+1)          
+    
     
 
-def dist(p1, p2):
+def distance(p1, p2):
     return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
 
 
