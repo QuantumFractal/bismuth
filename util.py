@@ -3,6 +3,9 @@ import random
 import math
 import colorsys
 
+
+
+
 class boundingBox:
     def __init__(self, x1, y1, x2, y2):
         self.min = (min(x1, x2), min(y1, y2))
@@ -73,7 +76,7 @@ def draw_segment_outfill(ctx, p1, p2, r1, r2, color):
     dx, dy = p2[0] - p1[0], p2[1] - p1[1]
     angle = math.atan2(dy, dx)
     hsv = colorsys.rgb_to_hsv(*color)
-    darker = colorsys.hsv_to_rgb(hsv[0], hsv[1], hsv[2] - 0.5)
+    darker = colorsys.hsv_to_rgb(hsv[0], hsv[1], hsv[2] - 0.2)
     
     ctx.set_line_width(5)
 
@@ -115,7 +118,7 @@ def draw_segment_infill(ctx, p1, p2, r1, r2, color):
         
     ctx.set_line_width(5)
     hsv = colorsys.rgb_to_hsv(*color)
-    darker = colorsys.hsv_to_rgb(hsv[0], hsv[1], hsv[2] - 0.5)
+    darker = colorsys.hsv_to_rgb(hsv[0], hsv[1], hsv[2] - 0.2)
 
     r1 -= 5 / 2
     r2 -= 5 / 2

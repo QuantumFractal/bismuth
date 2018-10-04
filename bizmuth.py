@@ -39,8 +39,17 @@ kd_tree = forest.kdTree(bounds)
 # seed = algae.Cell(position=(width / 2, height / 2))
 # algae_cluster = algae.Cluster(seed, bounds)
 
-seed = roots.Cell(position=(width / 2, height / 2))
-root_bundle = roots.Roots(seed)
+
+
+box_size = 240
+num_boxes = 3
+spacing = (width - (box_size * num_boxes)) / (num_boxes + 1)
+all_roots = []
+for x in range(num_boxes):
+    start_x = (x * box_size) + ((x + 1) *spacing)
+    end_x = start_x + box_size
+    seed = roots.Cell(position=(((start_x + end_x) / 2), 512), direction=random.uniform(0, math.pi*2))
+    all_roots.append(roots.Roots(seed, forest.boundingBox(start_x, 512-box_size, end_x, 512+box_size)))
 
 usage_state_map = {'SELECT': 'PLACE', 'PLACE': 'DELETE', 'DELETE': 'SELECT'}
 usage_mode = 'PLACE'
@@ -48,17 +57,19 @@ usage_mode = 'PLACE'
 
 def grow_once(dt):
     clear_surface(ctx)
-    
-    root_bundle.grow_once()
-    root_bundle.draw(ctx)
+
+    for root in all_roots:
+        if root.can_grow():    
+            root.grow_once()
+        root.draw(ctx)
     #algae_cluster.grow_cell()
     #algae_cluster.draw(ctx)
         
 
 def clear_surface(ctx):
     lg1 = cairo.LinearGradient(0.0, 0.0, 0.0, 700.0)
-    lg1.add_color_stop_rgba(0, 256/256, 256/256, 256/256, 1)
-    lg1.add_color_stop_rgba(1, 200/256, 200/256, 200/256, 1)
+    lg1.add_color_stop_rgba(0, 116/256, 176/256, 212/256, 1)
+    lg1.add_color_stop_rgba(1, 171/256, 207/256, 229/256, 1)
 
     ctx.rectangle(0, 0, width, height)
     ctx.set_source(lg1)
@@ -117,7 +128,8 @@ def on_key_press(symbol, modifiers):
 
     elif symbol == key.SPACE:
         clear_surface(ctx)
-        algae_cluster.reset()
+        for root in all_roots:
+            root.reset()
 
 
 @window.event
@@ -145,19 +157,8 @@ def on_draw():
 
 if __name__ == "__main__":
     #clock.schedule_interval(calc_nearest, 1/30)
-    #clock.schedule_interval(grow_once, 1/1000)
+    clock.schedule_interval(grow_once, 1/1000)
     clear_surface(ctx)
-    kd_tree.insert((300,400))
-    kd_tree.insert((50,250))
-    kd_tree.insert((100,120))
-    kd_tree.insert((700,700))
-    kd_tree.insert((500,300))
-    kd_tree.insert((350,450))
-    kd_tree.delete((700,700))
-
-    forest.print_tree(kd_tree.root)
-    kd_tree.draw(ctx)
-
     # root_bundle.grow_once()
     # root_bundle.draw(ctx)
 

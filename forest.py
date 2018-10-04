@@ -36,7 +36,6 @@ class kdTree:
             self._insert(self.root, point, self.root, data, depth=0)
 
     def delete(self, point):
-        print(f"Deleting point {point}")
         self.root = self._delete(self.root, point, depth=0)
 
     def findMin(self):
@@ -75,7 +74,6 @@ class kdTree:
         indent = "-"*depth
         # Dead end!
         if node is None:
-            print(indent+" dead end!")
             return None
             
         # We found a match
