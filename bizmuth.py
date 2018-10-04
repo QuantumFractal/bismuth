@@ -13,7 +13,7 @@ from pyglet.window import key, mouse
 
 
 # create data shared by ImageSurface and Texture
-width, height = 1024, 1024
+width, height =  int(600*2.4), 600
 
 surface_data = (ctypes.c_ubyte * (width * height * 4))()
 surface = cairo.ImageSurface.create_for_data (surface_data, cairo.FORMAT_ARGB32,
@@ -42,14 +42,14 @@ kd_tree = forest.kdTree(bounds)
 
 
 box_size = 240
-num_boxes = 3
+num_boxes = 5
 spacing = (width - (box_size * num_boxes)) / (num_boxes + 1)
 all_roots = []
 for x in range(num_boxes):
     start_x = (x * box_size) + ((x + 1) *spacing)
     end_x = start_x + box_size
-    seed = roots.Cell(position=(((start_x + end_x) / 2), 512), direction=random.uniform(0, math.pi*2))
-    all_roots.append(roots.Roots(seed, forest.boundingBox(start_x, 512-box_size, end_x, 512+box_size)))
+    seed = roots.Cell(position=(((start_x + end_x) / 2), height/2), direction=random.uniform(0, math.pi*2))
+    all_roots.append(roots.Roots(seed, forest.boundingBox(start_x, height/2-box_size, end_x, height/2+box_size)))
 
 usage_state_map = {'SELECT': 'PLACE', 'PLACE': 'DELETE', 'DELETE': 'SELECT'}
 usage_mode = 'PLACE'
