@@ -33,14 +33,14 @@ class Roots:
     def grow_once(self, position=None):
 
         tries = 10
-        envelope = 0
+        envelope = 30
         wiggle = math.radians(60)
         
 
         # Probablity of a split or a new leaf
         if random.random() <= 1:
             leaf = random.sample(self.leaves, 1)[0]
-            new_size = 15
+            new_size = 31
 
             # We're making a new leaf
             # Keep trying, wigglings, reducing size
@@ -78,8 +78,7 @@ class Roots:
         # Otherwise we split   
         else:
             nonleaf = random.sample(self.nonleaves, 1)[0]
-            new_size = 10
-            new_direction = random.uniform(nonleaf.direction - wiggle, nonleaf.direction + wiggle)
+
 
 
     def calculate_offset(self, direction, size, leaf):
