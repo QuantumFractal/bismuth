@@ -84,9 +84,7 @@ class kdTree:
             # Otherwise copy data from the minimum node (left or right)
             # and delete it recursively.
             if node.right is not None:
-                print(indent+" Seaching right for min...")
                 r_min = self._findMin(node.right, dim, depth=depth+1)
-                print(indent+f" Found {r_min}")
                 node.point = r_min.point
                 node.data = r_min.data
                 node.right = self._delete(node.right, r_min.point, depth=depth+1)

@@ -18,29 +18,38 @@ class Roots:
         # Leaves all points without children
         self.leaves= set([self.seed])
         self.nonleaves = set()
-        self.max_cells = 100
+        self.max_cells = 1000
     
     def reset(self):
         self.seed.children = []
         self.leaves = set([self.seed])
         self.nonleaves = set()
         self.kd = forest.kdTree(self.bounds)
-        self.max_cells = 100
+        self.max_cells = 1000
 
     def can_grow(self):
         return len(self.leaves) + len(self.nonleaves) < self.max_cells
 
-    def grow_once(self, position=None):
+    def grow_once(self, position=None, ctx=None):
 
         tries = 10
-        envelope = 30
-        wiggle = math.radians(60)
+        envelope = 0
+        wiggle = math.radians(40)
         
+        split_chance = (2*(len(self.leaves) + 1)) /(len(self.nonleaves) + 1) 
 
         # Probablity of a split or a new leaf
-        if random.random() <= 1:
+        if random.random() <= 0.3:
+            if len(self.leaves) == 0:
+                return 
+    
             leaf = random.sample(self.leaves, 1)[0]
-            new_size = 31
+            new_size = leaf.size
+
+            # Dead leaf!
+            if new_size < 10:
+                self.leaves.remove(leaf)
+                return
 
             # We're making a new leaf
             # Keep trying, wigglings, reducing size
@@ -50,6 +59,9 @@ class Roots:
                 new_direction = random.uniform(leaf.direction - wiggle, leaf.direction + wiggle)
 
                 new_position = self.calculate_offset(new_direction, new_size, leaf)
+
+                if ctx is not None:
+                    util.draw_point(ctx, *new_position)
 
                 self.kd.delete(leaf.position)
                 nearest = self.kd.nearestNeighbor(new_position)
@@ -74,30 +86,92 @@ class Roots:
                     break
                 else:
                     tries -= 1
+            # If we've exhausted this leaf, let's not try it again!
+            if tries < 0:
+                self.leaves.remove(leaf)
 
         # Otherwise we split   
         else:
+            if len(self.nonleaves) == 0:
+                return
             nonleaf = random.sample(self.nonleaves, 1)[0]
+            parent = nonleaf.parent
+            tries = 10
+
+            if parent is None:
+                p_angle = 0
+            else:
+                p_angle = parent.direction
+            
+            # Wiggle is how far we're willing to deviate from our parent's direction
+            # Reach is how far we're willing to stretch to make a new branch
+            wiggle = 0
+            reach = 0
+
+            while tries > 0:
+                tries -= 1
+
+                wiggle += math.radians(5)
+                reach += .5
+                
+                # Check which side to split on
+                if nonleaf.direction - p_angle < 0:
+                    new_direction = p_angle - math.radians(40)
+                else: 
+                    new_direction = p_angle + math.radians(40)
+
+                # Wiggle it a bit!
+                new_direction = random.uniform(new_direction - wiggle, new_direction + wiggle)
+                new_direction = p_angle - math.radians(40) if nonleaf.direction - p_angle < 0 else p_angle+ math.radians(40)
+                new_size = nonleaf.size
+
+                # Dead leaf!
+                if new_size < 3:
+                    self.nonleaves.remove(nonleaf)
+                    return
+
+                new_position = self.calculate_offset(new_direction, new_size, nonleaf, reach=reach)
+                if ctx is not None:
+                    util.draw_point(ctx, *new_position)
 
 
+                self.kd.delete(nonleaf.position)
+                nearest = self.kd.nearestNeighbor(new_position)
+                self.kd.insert(nonleaf.position, data={'size': nonleaf.size})
+                
+                neighbor_collision = nearest is None or forest.distance(nearest.point, new_position) > (nearest.data['size'] + new_size + envelope)
+                box_collision = new_position in self.bounds
 
-    def calculate_offset(self, direction, size, leaf):
-        new_position = ((leaf.size + size) * math.cos(direction) + leaf.position[0],
-                        (leaf.size + size) * math.sin(direction) + leaf.position[1])
+                if neighbor_collision and box_collision:
+                    new_leaf = Cell(position=new_position, direction=new_direction, size=new_size, parent=nonleaf)
+                    nonleaf.children.append(new_leaf)
+
+                    self.leaves.add(new_leaf)
+                    self.kd.insert(new_leaf.position, data={'size':new_leaf.size})  
+                    break
+            # If we've exhausted this branch position, let's not try it again
+            if tries < 0:
+                self.nonleaves.remove(nonleaf)
+
+    def calculate_offset(self, direction, size, leaf, reach=0):
+        new_position = ((leaf.size + size + reach) * math.cos(direction) + leaf.position[0],
+                        (leaf.size + size + reach) * math.sin(direction) + leaf.position[1])
         return new_position
 
 
 
     def draw(self, ctx):
+        envelope = 10
+        min_size = 5
         stack = list([self.seed])
         while len(stack) > 0:
             cur = stack.pop()
 
             for child in cur.children:
-                util.draw_segment_outfill(ctx, cur.position, child.position, cur.size, child.size, (1, 1, 1))
+                util.draw_segment_outfill(ctx, cur.position, child.position, max(cur.size - envelope, min_size), max(child.size - envelope, min_size), (65/256, 175/256, 98/256))
                 stack.append(child)
             parent = cur.parent or cur
-            util.draw_segment_infill(ctx, parent.position, cur.position, parent.size, cur.size, (1, 1, 1))
+            util.draw_segment_infill(ctx, parent.position, cur.position, max(parent.size - envelope, min_size), max(cur.size - envelope, min_size), (65/256, 175/256, 98/256))
         self.bounds.draw(ctx)
 
 class Cell:

@@ -142,7 +142,7 @@ def draw_segment_infill(ctx, p1, p2, r1, r2, color):
 
 def draw_point(ctx, x, y):
     ctx.save()
-    ctx.set_source_rgb(0, 0, 0)
+    ctx.set_source_rgb(1, 1, 1)
     ctx.set_line_width(2)
     ctx.arc(x, y, 4, 0, 7)
     ctx.fill()

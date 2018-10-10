@@ -13,7 +13,7 @@ from pyglet.window import key, mouse
 
 
 # create data shared by ImageSurface and Texture
-width, height =  int(600*2.4), 600
+width, height =  1200, 1200
 
 surface_data = (ctypes.c_ubyte * (width * height * 4))()
 surface = cairo.ImageSurface.create_for_data (surface_data, cairo.FORMAT_ARGB32,
@@ -38,18 +38,22 @@ kd_tree = forest.kdTree(bounds)
 
 # seed = algae.Cell(position=(width / 2, height / 2))
 # algae_cluster = algae.Cluster(seed, bounds)
+MULTI_BOX = False
 
-
-
-box_size = 240
-num_boxes = 5
-spacing = (width - (box_size * num_boxes)) / (num_boxes + 1)
-all_roots = []
-for x in range(num_boxes):
-    start_x = (x * box_size) + ((x + 1) *spacing)
-    end_x = start_x + box_size
-    seed = roots.Cell(position=(((start_x + end_x) / 2), height/2), direction=random.uniform(0, math.pi*2))
-    all_roots.append(roots.Roots(seed, forest.boundingBox(start_x, height/2-box_size, end_x, height/2+box_size)))
+if MULTI_BOX:
+    box_size = 240
+    num_boxes = 3
+    spacing = (width - (box_size * num_boxes)) / (num_boxes + 1)
+    all_roots = []
+    for x in range(num_boxes):
+        start_x = (x * box_size) + ((x + 1) *spacing)
+        end_x = start_x + box_size
+        seed = roots.Cell(position=(((start_x + end_x) / 2), height/2), direction=random.uniform(0, math.pi*2))
+        all_roots.append(roots.Roots(seed, forest.boundingBox(start_x, height/2-box_size, end_x, height/2+box_size)))
+else:
+    all_roots = []
+    seed = roots.Cell(position=(150, 150), direction=math.radians(45), size=30)
+    all_roots.append(roots.Roots(seed, forest.boundingBox(20, 20, width - 20, height - 20)))
 
 usage_state_map = {'SELECT': 'PLACE', 'PLACE': 'DELETE', 'DELETE': 'SELECT'}
 usage_mode = 'PLACE'
@@ -60,7 +64,9 @@ def grow_once(dt):
 
     for root in all_roots:
         if root.can_grow():    
-            root.grow_once()
+            root.grow_once(ctx=ctx)
+        else: 
+            print("DONE")
         root.draw(ctx)
     #algae_cluster.grow_cell()
     #algae_cluster.draw(ctx)
@@ -68,8 +74,8 @@ def grow_once(dt):
 
 def clear_surface(ctx):
     lg1 = cairo.LinearGradient(0.0, 0.0, 0.0, 700.0)
-    lg1.add_color_stop_rgba(0, 116/256, 176/256, 212/256, 1)
-    lg1.add_color_stop_rgba(1, 171/256, 207/256, 229/256, 1)
+    lg1.add_color_stop_rgba(0, 106/256, 87/256, 68/256, 1)
+    lg1.add_color_stop_rgba(1, 74/256, 61/256, 47/256, 1)
 
     ctx.rectangle(0, 0, width, height)
     ctx.set_source(lg1)
