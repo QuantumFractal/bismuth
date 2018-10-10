@@ -107,12 +107,14 @@ class Roots:
             # Reach is how far we're willing to stretch to make a new branch
             wiggle = 0
             reach = 0
+            new_size = nonleaf.size
 
             while tries > 0:
                 tries -= 1
 
                 wiggle += math.radians(5)
                 reach += .5
+                new_size = max(new_size - .2, 5)
                 
                 # Check which side to split on
                 if nonleaf.direction - p_angle < 0:
@@ -123,7 +125,6 @@ class Roots:
                 # Wiggle it a bit!
                 new_direction = random.uniform(new_direction - wiggle, new_direction + wiggle)
                 new_direction = p_angle - math.radians(40) if nonleaf.direction - p_angle < 0 else p_angle+ math.radians(40)
-                new_size = nonleaf.size
 
                 # Dead leaf!
                 if new_size < 3:
