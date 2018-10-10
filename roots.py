@@ -5,11 +5,13 @@ import random
 from collections import deque
 import forest
 
+GREEN =  (65/256, 175/256, 98/256)
 
 class Roots:
 
-    def __init__(self, seed, bounds, kd=None):
+    def __init__(self, seed, bounds, kd=None, color=GREEN):
         self.seed = seed          
+        self.color = color
 
         # Hack for now
         if kd is None:
@@ -181,10 +183,10 @@ class Roots:
             cur = stack.pop()
 
             for child in cur.children:
-                util.draw_segment_outfill(ctx, cur.position, child.position, max(cur.size - envelope, min_size), max(child.size - envelope, min_size), (65/256, 175/256, 98/256))
+                util.draw_segment_outfill(ctx, cur.position, child.position, max(cur.size - envelope, min_size), max(child.size - envelope, min_size), self.color)
                 stack.append(child)
             parent = cur.parent or cur
-            util.draw_segment_infill(ctx, parent.position, cur.position, max(parent.size - envelope, min_size), max(cur.size - envelope, min_size), (65/256, 175/256, 98/256))
+            util.draw_segment_infill(ctx, parent.position, cur.position, max(parent.size - envelope, min_size), max(cur.size - envelope, min_size), self.color)
         self.bounds.draw(ctx)
 
 class Cell:

@@ -49,15 +49,15 @@ if MULTI_ROOT:
 
     # top left
     seed = roots.Cell(position=(border, border), direction=math.radians(45), size=root_size)
-    all_roots.append(roots.Roots(seed, None, kd=GLOBAL_KD_TREE))
+    all_roots.append(roots.Roots(seed, None, kd=GLOBAL_KD_TREE, color=(0/256, 120/256, 120/256)))
 
     # top right
     seed = roots.Cell(position=(width - border, border), direction=math.radians(45 + 90), size=root_size)
-    all_roots.append(roots.Roots(seed, None, kd=GLOBAL_KD_TREE))
+    all_roots.append(roots.Roots(seed, None, kd=GLOBAL_KD_TREE, color=(128/256, 128/256, 255/256)))
 
     # bottom left
     seed = roots.Cell(position=(border, height - border), direction=math.radians(-45), size=root_size)
-    all_roots.append(roots.Roots(seed, None, kd=GLOBAL_KD_TREE))
+    all_roots.append(roots.Roots(seed, None, kd=GLOBAL_KD_TREE, color=(200/256, 190/256, 80/256)))
 
     # bottom right
     seed = roots.Cell(position=(width - border, height - border), direction=math.radians(-45 - 90), size=root_size)
