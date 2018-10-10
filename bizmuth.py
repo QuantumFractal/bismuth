@@ -13,7 +13,7 @@ from pyglet.window import key, mouse
 
 
 # create data shared by ImageSurface and Texture
-width, height =  1200, 1200
+width, height =  1200, 800
 
 surface_data = (ctypes.c_ubyte * (width * height * 4))()
 surface = cairo.ImageSurface.create_for_data (surface_data, cairo.FORMAT_ARGB32,
@@ -38,18 +38,30 @@ kd_tree = forest.kdTree(bounds)
 
 # seed = algae.Cell(position=(width / 2, height / 2))
 # algae_cluster = algae.Cluster(seed, bounds)
-MULTI_BOX = False
+MULTI_ROOT = True
 
-if MULTI_BOX:
-    box_size = 240
-    num_boxes = 3
-    spacing = (width - (box_size * num_boxes)) / (num_boxes + 1)
+GLOBAL_KD_TREE = kd_tree
+
+if MULTI_ROOT:
+    border = 50
     all_roots = []
-    for x in range(num_boxes):
-        start_x = (x * box_size) + ((x + 1) *spacing)
-        end_x = start_x + box_size
-        seed = roots.Cell(position=(((start_x + end_x) / 2), height/2), direction=random.uniform(0, math.pi*2))
-        all_roots.append(roots.Roots(seed, forest.boundingBox(start_x, height/2-box_size, end_x, height/2+box_size)))
+    root_size = 30
+
+    # top left
+    seed = roots.Cell(position=(border, border), direction=math.radians(45), size=root_size)
+    all_roots.append(roots.Roots(seed, None, kd=GLOBAL_KD_TREE))
+
+    # top right
+    seed = roots.Cell(position=(width - border, border), direction=math.radians(45 + 90), size=root_size)
+    all_roots.append(roots.Roots(seed, None, kd=GLOBAL_KD_TREE))
+
+    # bottom left
+    seed = roots.Cell(position=(border, height - border), direction=math.radians(-45), size=root_size)
+    all_roots.append(roots.Roots(seed, None, kd=GLOBAL_KD_TREE))
+
+    # bottom right
+    seed = roots.Cell(position=(width - border, height - border), direction=math.radians(-45 - 90), size=root_size)
+    all_roots.append(roots.Roots(seed, None, kd=GLOBAL_KD_TREE))
 else:
     all_roots = []
     seed = roots.Cell(position=(150, 150), direction=math.radians(45), size=30)
@@ -60,17 +72,21 @@ usage_mode = 'PLACE'
 
 
 def grow_once(dt):
-    clear_surface(ctx)
 
-    for root in all_roots:
-        if root.can_grow():    
-            root.grow_once(ctx=ctx)
-        else: 
-            print("DONE")
-        root.draw(ctx)
+    for iters in range(10):
+        for root in all_roots:
+            if root.can_grow():    
+                root.grow_once(ctx=ctx)
+            else: 
+                print("DONE")
+
     #algae_cluster.grow_cell()
     #algae_cluster.draw(ctx)
-        
+
+def draw(dt):
+    clear_surface(ctx)
+    for root in all_roots:
+        root.draw(ctx)        
 
 def clear_surface(ctx):
     lg1 = cairo.LinearGradient(0.0, 0.0, 0.0, 700.0)
@@ -162,8 +178,8 @@ def on_draw():
 
 
 if __name__ == "__main__":
-    #clock.schedule_interval(calc_nearest, 1/30)
-    clock.schedule_interval(grow_once, 1/1000)
+    clock.schedule_interval(draw, 1/60)
+    clock.schedule_interval(grow_once, 1/100)
     clear_surface(ctx)
     # root_bundle.grow_once()
     # root_bundle.draw(ctx)

@@ -29,6 +29,9 @@ class kdTree:
         self.bounds = bounds
         self.K = K
 
+    def clear(self):
+        self.root = None
+
     def insert(self, point, data=None):        
         if self.root is None:
             self.root = kdNode(point, data=data)
@@ -36,6 +39,8 @@ class kdTree:
             self._insert(self.root, point, self.root, data, depth=0)
 
     def delete(self, point):
+        if point is None:
+            return
         self.root = self._delete(self.root, point, depth=0)
 
     def findMin(self):

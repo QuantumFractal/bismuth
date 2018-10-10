@@ -8,12 +8,16 @@ import forest
 
 class Roots:
 
-    def __init__(self, seed, bounds):
+    def __init__(self, seed, bounds, kd=None):
         self.seed = seed          
 
         # Hack for now
-        self.bounds = bounds
-        self.kd = forest.kdTree(self.bounds)
+        if kd is None:
+            self.bounds = bounds
+            self.kd = forest.kdTree(self.bounds)
+        else:
+            self.bounds = kd.bounds
+            self.kd = kd
 
         # Leaves all points without children
         self.leaves= set([self.seed])
@@ -24,7 +28,8 @@ class Roots:
         self.seed.children = []
         self.leaves = set([self.seed])
         self.nonleaves = set()
-        self.kd = forest.kdTree(self.bounds)
+        #self.kd = forest.kdTree(self.bounds)
+        self.kd.clear()
         self.max_cells = 1000
 
     def can_grow(self):
@@ -34,7 +39,7 @@ class Roots:
 
         tries = 10
         envelope = 0
-        wiggle = math.radians(40)
+
         
         split_chance = (2*(len(self.leaves) + 1)) /(len(self.nonleaves) + 1) 
 
@@ -50,7 +55,8 @@ class Roots:
             if new_size < 10:
                 self.leaves.remove(leaf)
                 return
-
+            
+            wiggle = math.radians(50)
             # We're making a new leaf
             # Keep trying, wigglings, reducing size
             while tries > 0:
@@ -105,15 +111,15 @@ class Roots:
             
             # Wiggle is how far we're willing to deviate from our parent's direction
             # Reach is how far we're willing to stretch to make a new branch
-            wiggle = 0
+            wiggle = math.radians(10)
             reach = 0
             new_size = nonleaf.size
 
             while tries > 0:
                 tries -= 1
 
-                wiggle += math.radians(5)
-                reach += .5
+                wiggle += math.radians(10)
+                reach += .2
                 new_size = max(new_size - .2, 5)
                 
                 # Check which side to split on
@@ -137,8 +143,14 @@ class Roots:
 
 
                 self.kd.delete(nonleaf.position)
+                if parent is not None:
+                    self.kd.delete(parent.position)
+
                 nearest = self.kd.nearestNeighbor(new_position)
+
                 self.kd.insert(nonleaf.position, data={'size': nonleaf.size})
+                if parent is not None:
+                    self.kd.insert(parent.position, data={'size': nonleaf.size})
                 
                 neighbor_collision = nearest is None or forest.distance(nearest.point, new_position) > (nearest.data['size'] + new_size + envelope)
                 box_collision = new_position in self.bounds
