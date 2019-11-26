@@ -1,2 +1,5 @@
 venv
+virtual
+.vscode
 __pycache__
+
