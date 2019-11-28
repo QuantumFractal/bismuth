@@ -13,13 +13,21 @@ svg_dir = top_dir / "svg"
 class GCodeTransformer(Transformer):
     def element(self, *args):
         tag = args[0][0].value
-        attrs = args[0][2:-1]
+        print("FOUND {}".format(tag))
 
-        if tag == "rect":
+
+        if tag == "svg":
+            attrs = {t[0]: t[1] for t in args[0] if type(t) == tuple}
+            content = [d for d in args[0] if type(d) == dict]
+            return {'tag': tag, 'attrs': attrs, 'content': content}
+
+        else:
+            attrs = args[0][2:-1]
             attrs.insert(0, ('tag', tag))
             return {t[0]: t[1] for t in attrs}
-        elif tag == "svg":
-            return args[0][-2]
+
+
+    def start(self, *args):
         return args[0][1]
 
     def attr(self, *args):
@@ -49,12 +57,14 @@ svg_parser = None
 with open(grammar_dir / "svg.lark", 'r') as f:
     svg_parser = Lark(f.read(), parser='lalr', debug=True)
 
-with open(svg_dir / "rect1.svg", 'r') as f:
+with open(svg_dir / "example1.svg", 'r') as f:
     tree = svg_parser.parse(f.read())
     print(tree.pretty())
     print("-----")
     t = GCodeTransformer().transform(tree)
     print(">>>>>")
-    print(t.pretty())
+
+    import json
+    print(json.dumps(t, indent=2))
     #Filter().visit(tree)
     #import code; code.interact(local=locals()) 

@@ -1,7 +1,7 @@
 start : prolog element
 
 prolog: "<?xml" S+ attr+ "?>" WS+
-element: _inline_tag+ | _start_tag element _end_tag
+element: _inline_tag | _start_tag element* _end_tag
 
 _start_tag : S* "<" _name S+ attr+ ">" WS*
 _end_tag : S* "</" _name ">" WS*
