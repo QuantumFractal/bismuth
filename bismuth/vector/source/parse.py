@@ -10,11 +10,28 @@ grammar_dir = top_dir / "grammar"
 svg_dir = top_dir / "svg"
 
 
+def parse_number(value):
+    attr_val = None
+    try:
+        attr_val = float(value)
+    except ValueError:
+        try:
+            attr_val = int(value)
+        except ValueError:
+            pass
+    return attr_val
 class GCodeTransformer(Transformer):
+
+    def __init__(self):
+        point_grammar = """start: (NUMBER WS NUMBER WS?)+
+                            %import common.WS
+                            %import common.NUMBER
+                        """
+        self.line_parser = Lark(point_grammar, parser='lalr')
+
+
     def element(self, *args):
         tag = args[0][0].value
-        print("FOUND {}".format(tag))
-
 
         if tag == "svg":
             attrs = {t[0]: t[1] for t in args[0] if type(t) == tuple}
@@ -24,8 +41,13 @@ class GCodeTransformer(Transformer):
         else:
             attrs = args[0][2:-1]
             attrs.insert(0, ('tag', tag))
-            return {t[0]: t[1] for t in attrs}
+            data = {t[0]: t[1] for t in attrs}
 
+            if tag.startswith("poly"):
+                tree = self.line_parser.parse(data['points'])
+                points = [parse_number(n) for n in tree.children if n.type == "NUMBER"]
+                data['points'] = points
+            return data
 
     def start(self, *args):
         return args[0][1]
@@ -42,7 +64,6 @@ class GCodeTransformer(Transformer):
                 attr_val = int(attr[1].value)
             except ValueError:
                 attr_val = attr[1].value if attr[1] else None
-
 
         return (attr_name, attr_val)
 
