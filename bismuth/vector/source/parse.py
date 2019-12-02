@@ -20,6 +20,23 @@ def parse_number(value):
         except ValueError:
             pass
     return attr_val
+
+class T(Transformer):
+    def start(self, *args):
+        return args[0]
+
+    def command(self, *args):
+        tree = args[0][0]
+        command = tree.data
+        points = [t for t in tree.children if type(t) != Token]
+        data = {'command': command, 'points': points}
+        return data
+
+    def pair(self, *args):
+        first = parse_number(args[0][0].value)
+        second = parse_number(args[0][1].value)
+        return (first, second)
+
 class GCodeTransformer(Transformer):
 
     def __init__(self):
@@ -28,6 +45,10 @@ class GCodeTransformer(Transformer):
                             %import common.NUMBER
                         """
         self.line_parser = Lark(point_grammar, parser='lalr')
+
+        with open(grammar_dir / "path.lark") as f:
+            self.path_parser = Lark(f.read(), parser='lalr')
+        self.path_transformer = T()
 
 
     def element(self, *args):
@@ -47,6 +68,11 @@ class GCodeTransformer(Transformer):
                 tree = self.line_parser.parse(data['points'])
                 points = [parse_number(n) for n in tree.children if n.type == "NUMBER"]
                 data['points'] = points
+
+            if tag.startswith("path"):
+                tree = self.path_parser.parse(data['d'])
+                tree = self.path_transformer.transform(tree)
+                data['path'] = tree
             return data
 
     def start(self, *args):
@@ -68,6 +94,7 @@ class GCodeTransformer(Transformer):
         return (attr_name, attr_val)
 
     prolog = lambda self, _: None
+
 
 class Filter(Visitor):
     def thing(self, tree):
