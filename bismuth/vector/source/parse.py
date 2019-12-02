@@ -21,7 +21,15 @@ def parse_number(value):
             pass
     return attr_val
 
-class T(Transformer):
+
+class PolyTranformer(Transformer):
+    def start(self, *args):
+        # For now we assume that points are 2D and paired off
+        tokens = args[0]
+        points = [parse_number(token.value) for token in tokens if token.type == "NUMBER"]
+        return list(map(lambda x,y: (x,y), points, points[1:] + [0]))
+
+class PathTransformer(Transformer):
     def start(self, *args):
         return args[0]
 
@@ -37,18 +45,16 @@ class T(Transformer):
         second = parse_number(args[0][1].value)
         return (first, second)
 
-class GCodeTransformer(Transformer):
-
+class SVGTransformer(Transformer):
     def __init__(self):
-        point_grammar = """start: (NUMBER WS NUMBER WS?)+
-                            %import common.WS
-                            %import common.NUMBER
-                        """
-        self.line_parser = Lark(point_grammar, parser='lalr')
+        with open(grammar_dir / "poly.lark") as f:
+            self.poly_parser = Lark(f.read(), parser='lalr')
+        self.poly_transformer = PolyTranformer()
+
 
         with open(grammar_dir / "path.lark") as f:
             self.path_parser = Lark(f.read(), parser='lalr')
-        self.path_transformer = T()
+        self.path_transformer = PathTransformer()
 
 
     def element(self, *args):
@@ -65,8 +71,8 @@ class GCodeTransformer(Transformer):
             data = {t[0]: t[1] for t in attrs}
 
             if tag.startswith("poly"):
-                tree = self.line_parser.parse(data['points'])
-                points = [parse_number(n) for n in tree.children if n.type == "NUMBER"]
+                tree = self.poly_parser.parse(data['points'])
+                points = self.poly_transformer.transform(tree)
                 data['points'] = points
 
             if tag.startswith("path"):
@@ -96,9 +102,6 @@ class GCodeTransformer(Transformer):
     prolog = lambda self, _: None
 
 
-class Filter(Visitor):
-    def thing(self, tree):
-        print(tree.data)
 
 
 svg_parser = None
@@ -107,10 +110,8 @@ with open(grammar_dir / "svg.lark", 'r') as f:
 
 with open(svg_dir / "example1.svg", 'r') as f:
     tree = svg_parser.parse(f.read())
-    print(tree.pretty())
-    print("-----")
-    t = GCodeTransformer().transform(tree)
-    print(">>>>>")
+
+    t = SVGTransformer().transform(tree)
 
     import json
     print(json.dumps(t, indent=2))
