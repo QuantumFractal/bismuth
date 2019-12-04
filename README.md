@@ -10,7 +10,7 @@ Putting some dope SVG to GCODE motion planning stuff here.
 ### TODO
 
 - [x] Write initial SVG Parser
-- [ ] Write sub parser for PATH tag
+- [x] Write sub parser for PATH tag
 - [x] Write sub parser for POLYGON and POLYLINE tag
 - [ ] Write attribute / tag filter
 

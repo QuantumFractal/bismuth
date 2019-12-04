@@ -5,6 +5,7 @@ logging.basicConfig(level=logging.DEBUG)
 import sys
 from pathlib import Path
 
+
 top_dir = Path(sys.path[0]).parents[0]
 grammar_dir = top_dir / "grammar"
 svg_dir = top_dir / "svg"
@@ -113,7 +114,17 @@ with open(svg_dir / "example1.svg", 'r') as f:
 
     t = SVGTransformer().transform(tree)
 
-    import json
-    print(json.dumps(t, indent=2))
+    from bismuth.structure.tree import kdTree
+    GRAPH = {}
+    for tag in t['content']:
+        if tag['tag'] == 'rect':
+
+            print("ASFA")
+            KDTREE.insert()
+            # Verify we have all the necessary attributes maybe?
+            # x y width height
+            # 4 lines
+
+
     #Filter().visit(tree)
     #import code; code.interact(local=locals()) 
