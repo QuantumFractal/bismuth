@@ -3,6 +3,8 @@ fun with procgen.
 
 This repo is meant to explore my musings with randomly generated systems. I've mainly spent all of my time implementing a kdTree and nearest neighbor search because collision detection is important for physically based systems (like algae, roots, etc). 
 
+To install in virtual environment: `make init`
+
 ## UPDATE
 
 Putting some dope SVG to GCODE motion planning stuff here.
