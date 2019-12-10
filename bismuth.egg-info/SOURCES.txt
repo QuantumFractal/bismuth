@@ -1,0 +1,6 @@
+README.md
+setup.py
+bismuth.egg-info/PKG-INFO
+bismuth.egg-info/SOURCES.txt
+bismuth.egg-info/dependency_links.txt
+bismuth.egg-info/top_level.txt
