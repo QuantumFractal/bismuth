@@ -108,7 +108,10 @@ class Axes():
             t, t, l
         ])
 
-        colors = np.tile(np.array([1.0, 0.0, 0.0]), len(vertices))
+        red = np.tile(np.array([1.0, 0.0, 0.0]), len(vertices) // 3 // 2)
+        green = np.tile(np.array([0.0, 1.0, 0.0]), len(vertices) // 3 // 2)
+        colors = np.concatenate((red, green), axis=0)
+        print(colors)
 
         self.vbo = ctx.buffer(vertices.astype('f4').tobytes())
         self.vao = glw.opengl.vao.VAO(name="axes", mode=gl.TRIANGLE_STRIP)
