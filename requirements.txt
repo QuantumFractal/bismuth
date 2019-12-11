@@ -1,4 +1,4 @@
-bismuth==1.0
+-e git+git@github.com:QuantumFractal/bismuth.git@0ae88720c6ff021345d908213046df3d95c6ba22#egg=bismuth
 dataclasses==0.6
 future==0.16.0
 lark-parser==0.7.8

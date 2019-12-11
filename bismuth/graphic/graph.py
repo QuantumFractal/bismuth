@@ -15,13 +15,14 @@ class HelloWorld(mglw.WindowConfig):
     gl_version = (3, 3)
     title = "Hello World"
     window_size = (400, 300)
+    aspect_ratio = 4 / 3
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
 
         # things to draw 
-        self.drawables = [drawables.BasicTriangle(self.ctx)]
+        self.drawables = [drawables.Axes(self.ctx)]
 
 
 
@@ -32,21 +33,19 @@ class HelloWorld(mglw.WindowConfig):
 
     def render(self, time, frame_time):
 
-        self.ctx.wireframe = True
-        self.ctx.clear(0.1, 0.1, 0.1)
+        #self.ctx.wireframe = True
+        self.ctx.clear(1.0, 1.0, 1.0)
 
 
-        angle = 0
-        proj = Matrix44.perspective_projection(45.0, 400/300, 0.0, 100.0)
-        lookat = Matrix44.look_at((np.cos(angle), np.sin(angle), 0.8),
-            (0.0, 0.0, 0.1),
-            (0.0, 0.0, 1.0),
-        )
+        camX = np.sin(time) * 4
+        camY = np.cos(time) * 4
+        
+        model = Matrix44.identity().from_y_rotation(np.pi * time / 2)
+        view = Matrix44.look_at((10.0, 5.0, 10.0), (0.0, 0.0, 0.0), (0.0, 1.0, 0.0))
+        projection = Matrix44.perspective_projection(45.0, self.aspect_ratio, 0.1, 100.0)
 
-       
-        mvp = proj * lookat
         for drawable in self.drawables:
-            drawable.render(mvp)
+            drawable.render(model, view, projection)
 
 
 if __name__ == '__main__':
