@@ -12,12 +12,12 @@ import moderngl_window as mglw
 from bismuth.graphic import drawables
 
 
-class HelloWorld(mglw.WindowConfig):
+class Plotter(mglw.WindowConfig):
     gl_version = (3, 3)
-    title = "Hello World"
+    title = "Plotter V1"
     window_size = (400, 300)
     aspect_ratio = 4 / 3
-    samples = 2
+    samples = 0
     resource_dir = os.path.normpath(os.path.join(__file__, ".."))
 
     def __init__(self, **kwargs):
@@ -25,8 +25,7 @@ class HelloWorld(mglw.WindowConfig):
 
         # things to draw 
         #drawables.Axes(self.ctx), 
-        self.drawables = [drawables.Rect(self.ctx, self), drawables.Axes(self.ctx)]
-
+        self.drawables = [drawables.Grid(self.ctx, x_lines=7, y_lines=7, thickness=4)]
 
 
     @classmethod
@@ -36,22 +35,13 @@ class HelloWorld(mglw.WindowConfig):
 
     def render(self, time, frame_time):
 
-        #self.ctx.wireframe = True
-
-        self.ctx.clear(1.0, 1.0, 1.0) 
+        self.ctx.clear(0.1, 0.1, 0.1) 
         self.ctx.enable(gl.BLEND)
         self.ctx.enable(gl.DEPTH_TEST)
 
-        camX = np.sin(time) * 4
-        camY = np.cos(time) * 4
-        
-        model = Matrix44.identity().from_y_rotation(np.pi * time / 2)
-        view = Matrix44.look_at((10.0, 5.0, 10.0), (0.0, 0.0, 0.0), (0.0, 1.0, 0.0))
-        projection = Matrix44.perspective_projection(45.0, self.aspect_ratio, 0.1, 100.0)
-
         for drawable in self.drawables:
-            drawable.render(model, view, projection)
+            drawable.render()
 
 
 if __name__ == '__main__':
-    HelloWorld.run()
+    Plotter.run()
