@@ -6,7 +6,7 @@ moderngl==5.5.4
 moderngl-window==2.0.4
 multipledispatch==0.6.0
 numpy==1.17.4
-Pillow==6.2.1
+Pillow==8.1.1
 pyglet==1.4.8
 pyrr==0.10.3
 six==1.13.0
